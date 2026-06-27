@@ -100,7 +100,6 @@ impl IpcClient {
     pub fn read_event(&mut self) -> Result<SwayEvent, DriftError> {
         loop {
             let (msg_type, payload_buf) = self.read_response_raw()?;
-            eprintln!("[ipc] read_event received msg_type: {}", msg_type);
             if msg_type == 0x80000003 {
                 let payload = String::from_utf8(payload_buf)
                     .map_err(|e| DriftError::InvalidResponse(e.to_string()))?;
@@ -227,13 +226,14 @@ fn count_leaves(node: &serde_json::Value) -> u32 {
     let has_children = (nodes.is_some() && !nodes.unwrap().is_empty())
         || (floating.is_some() && !floating.unwrap().is_empty());
 
-    if !has_children && (t == "con" || t == "floating_con")
+    if !has_children
+        && (t == "con" || t == "floating_con")
         && (node.get("app_id").is_some()
             || node.get("window").is_some()
             || node.get("name").is_some())
-        {
-            return 1;
-        }
+    {
+        return 1;
+    }
 
     if let Some(n) = nodes {
         for child in n {

@@ -122,10 +122,7 @@ fn main() {
             | DriftError::InvalidResponse(_) => {
                 process::exit(1);
             }
-            DriftError::StateIo(_)
-            | DriftError::ConfigIo(_)
-            | DriftError::ConfigParse(_)
-            | DriftError::ConfigInvalidValue(_) => {
+            DriftError::StateIo(_) | DriftError::ConfigIo(_) | DriftError::ConfigParse(_) => {
                 process::exit(2);
             }
             DriftError::DaemonNotRunning | DriftError::DaemonAlreadyRunning => {

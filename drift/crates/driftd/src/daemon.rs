@@ -22,10 +22,9 @@ pub fn run_daemon(sway_socket: &str) -> Result<(), DriftError> {
     if fs::metadata(DAEMON_SOCKET).is_ok() {
         if std::os::unix::net::UnixStream::connect(DAEMON_SOCKET).is_ok() {
             return Err(DriftError::DaemonAlreadyRunning);
-        } else {
-            // Orphaned socket, remove it
-            let _ = fs::remove_file(DAEMON_SOCKET);
         }
+        // Orphaned socket, remove it
+        let _ = fs::remove_file(DAEMON_SOCKET);
     }
 
     let listener = UnixListener::bind(DAEMON_SOCKET).map_err(DriftError::StateIo)?;
@@ -35,82 +34,44 @@ pub fn run_daemon(sway_socket: &str) -> Result<(), DriftError> {
     let state_clone = Arc::clone(&state);
 
     thread::spawn(move || {
-        println!("[daemon] Background thread started");
         if let Ok(mut event_conn) = IpcClient::connect(&sway_sock) {
-            println!("[daemon] Connected to sway IPC for events");
             if event_conn.subscribe_window().is_ok() {
-                println!("[daemon] Subscribed to window events successfully");
                 loop {
                     match event_conn.read_event() {
                         Ok(event) => {
-                            println!("[daemon] Received event: {}", event.change);
                             if event.change == "new" {
-                                println!("[daemon] Detected new window!");
                                 let is_active = { state_clone.lock().unwrap().active };
-                                println!("[daemon] is_active: {}", is_active);
                                 if is_active {
-                                    match DriftConfig::load() {
-                                        Ok(config) => {
-                                            println!(
-                                                "[daemon] Loaded config, max_windows = {}",
-                                                config.max_windows
-                                            );
-                                            match IpcClient::connect(&sway_sock) {
-                                                Ok(mut action_conn) => {
-                                                    match action_conn
-                                                        .focused_workspace_window_count()
+                                    if let Ok(config) = DriftConfig::load() {
+                                        if let Ok(mut action_conn) = IpcClient::connect(&sway_sock) {
+                                            if let Ok(count) =
+                                                action_conn.focused_workspace_window_count()
+                                            {
+                                                if count > config.max_windows {
+                                                    let delay = config.overflow_delay_ms;
+                                                    if delay > 0 {
+                                                        std::thread::sleep(std::time::Duration::from_millis(delay));
+                                                    }
+                                                    if let Ok(current) = action_conn
+                                                        .focused_workspace_number()
                                                     {
-                                                        Ok(count) => {
-                                                            println!(
-                                                                "[daemon] Window count = {}",
-                                                                count
-                                                            );
-                                                            if count > config.max_windows {
-                                                                println!("[daemon] Triggering overflow! ({} > {})", count, config.max_windows);
-
-                                                                let delay =
-                                                                    config.overflow_delay_ms;
-                                                                if delay > 0 {
-                                                                    std::thread::sleep(std::time::Duration::from_millis(delay));
-                                                                }
-
-                                                                match action_conn.focused_workspace_number() {
-                                                                    Ok(current) => {
-                                                                        let res = action_conn.send(
-                                                                            &Action::MoveNext.ipc_command_for(current),
-                                                                            IpcCommandType::RunCommand,
-                                                                        );
-                                                                        println!("[daemon] Overflow action result: {:?}", res);
-                                                                    }
-                                                                    Err(e) => println!("[daemon] Error getting current ws: {:?}", e),
-                                                                }
-                                                            }
-                                                        }
-                                                        Err(e) => println!(
-                                                            "[daemon] Error getting count: {:?}",
-                                                            e
-                                                        ),
+                                                        let _ = action_conn.send(
+                                                            &Action::MoveNext
+                                                                .ipc_command_for(current),
+                                                            IpcCommandType::RunCommand,
+                                                        );
                                                     }
                                                 }
-                                                Err(e) => println!(
-                                                    "[daemon] Error connecting for action: {:?}",
-                                                    e
-                                                ),
                                             }
-                                        }
-                                        Err(e) => {
-                                            println!("[daemon] Error loading config: {:?}", e)
                                         }
                                     }
                                 }
                             }
                         }
-                        Err(DriftError::InvalidResponse(e)) => {
-                            println!("[daemon] Ignored unparseable event: {}", e);
+                        Err(DriftError::InvalidResponse(_)) => {
                             continue;
                         }
-                        Err(e) => {
-                            println!("[daemon] Fatal IO error reading event: {:?}", e);
+                        Err(_) => {
                             break;
                         }
                     }

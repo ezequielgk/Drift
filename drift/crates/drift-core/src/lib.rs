@@ -15,7 +15,6 @@ pub enum DriftError {
     StateIo(std::io::Error),
     ConfigIo(std::io::Error),
     ConfigParse(String),
-    ConfigInvalidValue(String),
     DaemonNotRunning,
     DaemonAlreadyRunning,
 }
@@ -31,7 +30,6 @@ impl fmt::Display for DriftError {
             Self::StateIo(e) => write!(f, "State I/O error: {}", e),
             Self::ConfigIo(e) => write!(f, "Config I/O error: {}", e),
             Self::ConfigParse(msg) => write!(f, "Config parse error: {}", msg),
-            Self::ConfigInvalidValue(msg) => write!(f, "Config invalid value: {}", msg),
             Self::DaemonNotRunning => write!(f, "Daemon is not running"),
             Self::DaemonAlreadyRunning => write!(f, "Daemon is already running"),
         }
