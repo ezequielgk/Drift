@@ -85,6 +85,22 @@ overflow_delay_ms = 250
 
 ## Installation
 
+### Using the installer
+
+To install or update to the latest release, run:
+
+```bash
+curl -fsSL https://github.com/ezequielgk/drift/releases/latest/download/install.sh | bash
+```
+
+This will:
+1. Download the latest release tarball
+2. Install `drift` and `driftd` to `~/.local/bin`
+3. Install shell completions
+4. Add `~/.local/bin` to your PATH if needed
+
+### Manual installation
+
 ```bash
 git clone https://github.com/ezequielgk/drift
 cd drift
