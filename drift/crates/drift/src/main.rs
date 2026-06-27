@@ -7,6 +7,7 @@ use clap_complete::{
     shells::{Bash, Fish, Zsh},
 };
 use drift_core::actions::Action;
+use drift_core::config::DriftConfig;
 use drift_core::ipc::{IpcClient, IpcCommandType};
 use drift_core::state::LockfileState;
 use drift_core::DriftError;
@@ -28,6 +29,14 @@ struct Cli {
     /// Override $SWAYSOCK
     #[arg(long)]
     socket: Option<String>,
+}
+
+#[derive(Subcommand)]
+enum ConfigCommand {
+    /// Get a config value
+    Get { key: String },
+    /// Set a config value
+    Set { key: String, value: String },
 }
 
 #[derive(Subcommand)]
@@ -57,6 +66,15 @@ enum Commands {
         #[arg(value_enum)]
         shell: Shell,
     },
+
+    /// Manage configuration
+    Config {
+        #[command(subcommand)]
+        command: ConfigCommand,
+    },
+
+    /// Manually trigger window overflow check
+    Overflow,
 }
 
 fn get_sway_socket(cli_socket: Option<String>) -> Result<String, DriftError> {
@@ -81,6 +99,35 @@ fn run() -> Result<(), DriftError> {
             Shell::Bash => generate(Bash, &mut cmd, "drift", &mut std::io::stdout()),
             Shell::Zsh => generate(Zsh, &mut cmd, "drift", &mut std::io::stdout()),
             Shell::Fish => generate(Fish, &mut cmd, "drift", &mut std::io::stdout()),
+        }
+        return Ok(());
+    }
+
+    if let Commands::Config { command } = cli.command {
+        let mut config = DriftConfig::load()?;
+        match command {
+            ConfigCommand::Get { key } => {
+                if key == "max-windows" {
+                    println!("{}", config.max_windows);
+                } else {
+                    eprintln!("Error: Unknown config key '{}'", key);
+                    process::exit(2);
+                }
+            }
+            ConfigCommand::Set { key, value } => {
+                if key == "max-windows" {
+                    let val: u32 = value.parse().unwrap_or(0);
+                    if val < 1 {
+                        eprintln!("Error: max-windows must be a positive integer (>= 1)");
+                        process::exit(2);
+                    }
+                    config.max_windows = val;
+                    config.save()?;
+                } else {
+                    eprintln!("Error: Unknown config key '{}'", key);
+                    process::exit(2);
+                }
+            }
         }
         return Ok(());
     }
@@ -130,7 +177,17 @@ fn run() -> Result<(), DriftError> {
                 dispatch_action(Action::Back, &socket)?
             }
         }
-        Commands::Completions { .. } => unreachable!(),
+        Commands::Overflow => {
+            if state.is_active() {
+                let config = DriftConfig::load()?;
+                let mut client = IpcClient::connect(&socket)?;
+                let count = client.focused_workspace_window_count()?;
+                if count > config.max_windows {
+                    client.send(Action::MoveNext.ipc_command(), IpcCommandType::RunCommand)?;
+                }
+            }
+        }
+        Commands::Completions { .. } | Commands::Config { .. } => unreachable!(),
     }
 
     Ok(())
@@ -147,7 +204,10 @@ fn main() {
             | DriftError::InvalidResponse(_) => {
                 process::exit(1);
             }
-            DriftError::StateIo(_) => {
+            DriftError::StateIo(_)
+            | DriftError::ConfigIo(_)
+            | DriftError::ConfigParse(_)
+            | DriftError::ConfigInvalidValue(_) => {
                 process::exit(2);
             }
             DriftError::DaemonNotRunning | DriftError::DaemonAlreadyRunning => {

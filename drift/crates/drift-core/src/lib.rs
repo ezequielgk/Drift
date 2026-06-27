@@ -1,6 +1,7 @@
 use std::fmt;
 
 pub mod actions;
+pub mod config;
 pub mod ipc;
 pub mod state;
 
@@ -12,6 +13,9 @@ pub enum DriftError {
     IpcWrite(std::io::Error),
     InvalidResponse(String),
     StateIo(std::io::Error),
+    ConfigIo(std::io::Error),
+    ConfigParse(String),
+    ConfigInvalidValue(String),
     DaemonNotRunning,
     DaemonAlreadyRunning,
 }
@@ -25,6 +29,9 @@ impl fmt::Display for DriftError {
             Self::IpcWrite(e) => write!(f, "Failed to write to Sway IPC socket: {}", e),
             Self::InvalidResponse(msg) => write!(f, "Invalid Sway IPC response: {}", msg),
             Self::StateIo(e) => write!(f, "State I/O error: {}", e),
+            Self::ConfigIo(e) => write!(f, "Config I/O error: {}", e),
+            Self::ConfigParse(msg) => write!(f, "Config parse error: {}", msg),
+            Self::ConfigInvalidValue(msg) => write!(f, "Config invalid value: {}", msg),
             Self::DaemonNotRunning => write!(f, "Daemon is not running"),
             Self::DaemonAlreadyRunning => write!(f, "Daemon is already running"),
         }

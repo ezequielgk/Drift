@@ -11,15 +11,19 @@ pub fn run_ctl(cmd: Commands) -> Result<(), DriftError> {
         UnixStream::connect(DAEMON_SOCKET).map_err(|_| DriftError::DaemonNotRunning)?;
 
     let command_str = match cmd {
-        Commands::Toggle => "toggle",
-        Commands::Activate => "activate",
-        Commands::Deactivate => "deactivate",
-        Commands::Status => "status",
-        Commands::Next => "next",
-        Commands::Prev => "prev",
-        Commands::MoveNext => "move-next",
-        Commands::MovePrev => "move-prev",
-        Commands::Back => "back",
+        Commands::Toggle => "toggle".to_string(),
+        Commands::Activate => "activate".to_string(),
+        Commands::Deactivate => "deactivate".to_string(),
+        Commands::Status => "status".to_string(),
+        Commands::Next => "next".to_string(),
+        Commands::Prev => "prev".to_string(),
+        Commands::MoveNext => "move-next".to_string(),
+        Commands::MovePrev => "move-prev".to_string(),
+        Commands::Back => "back".to_string(),
+        Commands::Config { command } => match command {
+            crate::ConfigCommand::Get { key } => format!("config get {}", key),
+            crate::ConfigCommand::Set { key, value } => format!("config set {} {}", key, value),
+        },
         Commands::Completions { .. } => unreachable!(),
     };
 

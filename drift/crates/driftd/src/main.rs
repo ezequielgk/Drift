@@ -31,6 +31,14 @@ struct Cli {
 }
 
 #[derive(Subcommand, Clone)]
+pub enum ConfigCommand {
+    /// Get a config value
+    Get { key: String },
+    /// Set a config value
+    Set { key: String, value: String },
+}
+
+#[derive(Subcommand, Clone)]
 pub enum Commands {
     /// Toggle active/inactive state
     Toggle,
@@ -56,6 +64,12 @@ pub enum Commands {
     Completions {
         #[arg(value_enum)]
         shell: Shell,
+    },
+
+    /// Manage configuration
+    Config {
+        #[command(subcommand)]
+        command: ConfigCommand,
     },
 }
 
@@ -108,7 +122,10 @@ fn main() {
             | DriftError::InvalidResponse(_) => {
                 process::exit(1);
             }
-            DriftError::StateIo(_) => {
+            DriftError::StateIo(_)
+            | DriftError::ConfigIo(_)
+            | DriftError::ConfigParse(_)
+            | DriftError::ConfigInvalidValue(_) => {
                 process::exit(2);
             }
             DriftError::DaemonNotRunning | DriftError::DaemonAlreadyRunning => {

@@ -22,6 +22,13 @@ drift toggle       # toggle the layout on/off
 drift activate     # force activate
 drift deactivate   # force deactivate
 drift status       # print "active" or "inactive"
+
+# Configuration
+drift config get max-windows
+drift config set max-windows 3
+
+# Window overflow
+drift overflow     # manually check window count and move to next workspace if exceeded
 ```
 
 ### `driftd` — daemon
@@ -34,6 +41,10 @@ drift-ctl toggle
 drift-ctl activate
 drift-ctl deactivate
 drift-ctl status
+
+# Configuration
+drift-ctl config get max-windows
+drift-ctl config set max-windows 3
 ```
 
 ## Available Actions
@@ -47,8 +58,22 @@ Both `drift` and `drift-ctl` provide the following actions:
 | `move-next`  | move container to next workspace and follow               |
 | `move-prev`  | move container to prev workspace and follow               |
 | `back`       | toggle between last two workspaces                        |
+| `overflow`   | *(stateless only)* manually check limit and trigger overflow |
 
 *(When inactive, these commands do nothing and exit 0).*
+
+## Window Overflow & Config
+
+*drift* supports an automatic **window overflow** feature. You can define a maximum number of windows per workspace. If *drift* is active and a new window is opened that exceeds this limit, the window is automatically moved to the next workspace on the output.
+
+The configuration is saved persistently in `~/.config/drift/config.toml`:
+
+```toml
+max_windows = 2
+```
+
+- **Daemon variant (`driftd`)**: This feature works automatically in the background. The daemon listens to Sway window events and triggers the overflow without any extra configuration.
+- **Stateless variant (`drift`)**: Since it doesn't run in the background, you must manually trigger the overflow check in your Sway config using the `for_window` directive.
 
 ## Installation
 
@@ -77,6 +102,10 @@ bindsym $mod+Left        exec drift prev
 bindsym $mod+Shift+Right exec drift move-next
 bindsym $mod+Shift+Left  exec drift move-prev
 bindsym $mod+Tab         exec drift back
+
+# Enable window overflow (Stateless only)
+for_window [app_id=".*"] exec drift overflow
+for_window [class=".*"] exec drift overflow
 ```
 
 ### Daemon
