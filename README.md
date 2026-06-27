@@ -26,6 +26,8 @@ drift status       # print "active" or "inactive"
 # Configuration
 drift config get max-windows
 drift config set max-windows 3
+drift config get overflow-delay
+drift config set overflow-delay 250
 
 # Window overflow
 drift overflow     # manually check window count and move to next workspace if exceeded
@@ -45,6 +47,8 @@ drift-ctl status
 # Configuration
 drift-ctl config get max-windows
 drift-ctl config set max-windows 3
+drift-ctl config get overflow-delay
+drift-ctl config set overflow-delay 250
 ```
 
 ## Available Actions
@@ -70,7 +74,11 @@ The configuration is saved persistently in `~/.config/drift/config.toml`:
 
 ```toml
 max_windows = 2
+overflow_delay_ms = 250
 ```
+
+- **max_windows**: The maximum number of windows allowed per workspace.
+- **overflow_delay_ms**: The delay in milliseconds before moving the overflowing window to the next workspace. Set to `0` for instant movement.
 
 - **Daemon variant (`driftd`)**: This feature works automatically in the background. The daemon listens to Sway window events and triggers the overflow without any extra configuration.
 - **Stateless variant (`drift`)**: Since it doesn't run in the background, you must manually trigger the overflow check in your Sway config using the `for_window` directive.
