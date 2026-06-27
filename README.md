@@ -102,6 +102,11 @@ This will:
 ### Manual installation
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/ezequielgk/drift/main/install.sh | bash
+```
+
+Alternatively, to build from source:
+```bash
 git clone https://github.com/ezequielgk/drift
 cd drift
 cargo install --path crates/drift    # stateless variant

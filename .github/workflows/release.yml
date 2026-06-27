@@ -79,5 +79,5 @@ jobs:
             To install or update to this version, run:
             
             ```bash
-            curl -fsSL https://github.com/ezequielgk/drift/releases/latest/download/install.sh | bash
+            curl -fsSL https://raw.githubusercontent.com/ezequielgk/drift/main/install.sh | bash
             ```
