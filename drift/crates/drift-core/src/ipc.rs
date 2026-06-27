@@ -100,7 +100,8 @@ impl IpcClient {
     pub fn read_event(&mut self) -> Result<SwayEvent, DriftError> {
         loop {
             let (msg_type, payload_buf) = self.read_response_raw()?;
-            if msg_type == 0x80000002 {
+            eprintln!("[ipc] read_event received msg_type: {}", msg_type);
+            if msg_type == 0x80000003 {
                 let payload = String::from_utf8(payload_buf)
                     .map_err(|e| DriftError::InvalidResponse(e.to_string()))?;
                 let event: SwayEvent = serde_json::from_str(&payload)
@@ -108,6 +109,39 @@ impl IpcClient {
                 return Ok(event);
             }
         }
+    }
+
+    /// Returns the number of the currently focused workspace.
+    /// Uses GET_WORKSPACES (type 1) and finds the entry with `focused: true`.
+    pub fn focused_workspace_number(&mut self) -> Result<u32, DriftError> {
+        self.stream
+            .write_all(IPC_MAGIC)
+            .map_err(DriftError::IpcWrite)?;
+        self.stream
+            .write_all(&0u32.to_ne_bytes())
+            .map_err(DriftError::IpcWrite)?;
+        self.stream
+            .write_all(&(1u32).to_ne_bytes())
+            .map_err(DriftError::IpcWrite)?; // GET_WORKSPACES
+
+        let ws_resp = self.read_response()?;
+        let workspaces: Vec<serde_json::Value> = serde_json::from_str(&ws_resp)
+            .map_err(|e| DriftError::InvalidResponse(e.to_string()))?;
+
+        let focused_ws = workspaces
+            .iter()
+            .find(|w| w.get("focused").and_then(|f| f.as_bool()).unwrap_or(false));
+
+        if let Some(ws) = focused_ws {
+            if let Some(num) = ws.get("num").and_then(|n| n.as_i64()) {
+                if num >= 1 {
+                    return Ok(num as u32);
+                }
+            }
+        }
+
+        eprintln!("Warning: focused workspace has no valid numeric ID, falling back to 1");
+        Ok(1)
     }
 
     pub fn focused_workspace_window_count(&mut self) -> Result<u32, DriftError> {
@@ -193,9 +227,13 @@ fn count_leaves(node: &serde_json::Value) -> u32 {
     let has_children = (nodes.is_some() && !nodes.unwrap().is_empty())
         || (floating.is_some() && !floating.unwrap().is_empty());
 
-    if !has_children && (t == "con" || t == "floating_con") {
-        return 1;
-    }
+    if !has_children && (t == "con" || t == "floating_con")
+        && (node.get("app_id").is_some()
+            || node.get("window").is_some()
+            || node.get("name").is_some())
+        {
+            return 1;
+        }
 
     if let Some(n) = nodes {
         for child in n {

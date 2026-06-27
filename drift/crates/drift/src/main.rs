@@ -86,7 +86,8 @@ fn get_sway_socket(cli_socket: Option<String>) -> Result<String, DriftError> {
 
 fn dispatch_action(action: Action, socket: &str) -> Result<(), DriftError> {
     let mut client = IpcClient::connect(socket)?;
-    client.send(action.ipc_command(), IpcCommandType::RunCommand)?;
+    let current = client.focused_workspace_number()?;
+    client.send(&action.ipc_command_for(current), IpcCommandType::RunCommand)?;
     Ok(())
 }
 
@@ -109,6 +110,8 @@ fn run() -> Result<(), DriftError> {
             ConfigCommand::Get { key } => {
                 if key == "max-windows" {
                     println!("{}", config.max_windows);
+                } else if key == "overflow-delay" {
+                    println!("{}", config.overflow_delay_ms);
                 } else {
                     eprintln!("Error: Unknown config key '{}'", key);
                     process::exit(2);
@@ -122,6 +125,13 @@ fn run() -> Result<(), DriftError> {
                         process::exit(2);
                     }
                     config.max_windows = val;
+                    config.save()?;
+                } else if key == "overflow-delay" {
+                    let val: u64 = value.parse().unwrap_or_else(|_| {
+                        eprintln!("Error: overflow-delay must be a positive integer");
+                        process::exit(2);
+                    });
+                    config.overflow_delay_ms = val;
                     config.save()?;
                 } else {
                     eprintln!("Error: Unknown config key '{}'", key);
@@ -183,7 +193,15 @@ fn run() -> Result<(), DriftError> {
                 let mut client = IpcClient::connect(&socket)?;
                 let count = client.focused_workspace_window_count()?;
                 if count > config.max_windows {
-                    client.send(Action::MoveNext.ipc_command(), IpcCommandType::RunCommand)?;
+                    let delay = config.overflow_delay_ms;
+                    if delay > 0 {
+                        std::thread::sleep(std::time::Duration::from_millis(delay));
+                    }
+                    let current = client.focused_workspace_number()?;
+                    client.send(
+                        &Action::MoveNext.ipc_command_for(current),
+                        IpcCommandType::RunCommand,
+                    )?;
                 }
             }
         }

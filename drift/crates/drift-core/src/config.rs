@@ -5,12 +5,26 @@ use crate::DriftError;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct DriftConfig {
+    #[serde(default = "default_max_windows")]
     pub max_windows: u32,
+    #[serde(default = "default_overflow_delay_ms")]
+    pub overflow_delay_ms: u64,
+}
+
+fn default_max_windows() -> u32 {
+    2
+}
+
+fn default_overflow_delay_ms() -> u64 {
+    250
 }
 
 impl Default for DriftConfig {
     fn default() -> Self {
-        Self { max_windows: 2 }
+        Self {
+            max_windows: default_max_windows(),
+            overflow_delay_ms: default_overflow_delay_ms(),
+        }
     }
 }
 
