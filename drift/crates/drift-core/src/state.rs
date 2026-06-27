@@ -35,4 +35,3 @@ impl LockfileState {
 pub struct LayoutState {
     pub active: bool,
 }
-

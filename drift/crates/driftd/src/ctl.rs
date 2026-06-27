@@ -20,6 +20,7 @@ pub fn run_ctl(cmd: Commands) -> Result<(), DriftError> {
         Commands::MoveNext => "move-next",
         Commands::MovePrev => "move-prev",
         Commands::Back => "back",
+        Commands::Completions { .. } => unreachable!(),
     };
 
     stream

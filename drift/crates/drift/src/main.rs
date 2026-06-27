@@ -1,11 +1,22 @@
 use std::env;
 use std::process;
 
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
+use clap_complete::{
+    generate,
+    shells::{Bash, Fish, Zsh},
+};
 use drift_core::actions::Action;
 use drift_core::ipc::{IpcClient, IpcCommandType};
 use drift_core::state::LockfileState;
 use drift_core::DriftError;
+
+#[derive(clap::ValueEnum, Clone)]
+enum Shell {
+    Bash,
+    Zsh,
+    Fish,
+}
 
 #[derive(Parser)]
 #[command(name = "drift")]
@@ -40,6 +51,12 @@ enum Commands {
     MovePrev,
     /// Toggle between last two workspaces
     Back,
+
+    /// Generate shell completions
+    Completions {
+        #[arg(value_enum)]
+        shell: Shell,
+    },
 }
 
 fn get_sway_socket(cli_socket: Option<String>) -> Result<String, DriftError> {
@@ -57,6 +74,17 @@ fn dispatch_action(action: Action, socket: &str) -> Result<(), DriftError> {
 
 fn run() -> Result<(), DriftError> {
     let cli = Cli::parse();
+
+    if let Commands::Completions { shell } = cli.command {
+        let mut cmd = Cli::command();
+        match shell {
+            Shell::Bash => generate(Bash, &mut cmd, "drift", &mut std::io::stdout()),
+            Shell::Zsh => generate(Zsh, &mut cmd, "drift", &mut std::io::stdout()),
+            Shell::Fish => generate(Fish, &mut cmd, "drift", &mut std::io::stdout()),
+        }
+        return Ok(());
+    }
+
     let socket = get_sway_socket(cli.socket)?;
     let state = LockfileState::new("/tmp/drift.lock");
 
@@ -102,6 +130,7 @@ fn run() -> Result<(), DriftError> {
                 dispatch_action(Action::Back, &socket)?
             }
         }
+        Commands::Completions { .. } => unreachable!(),
     }
 
     Ok(())
