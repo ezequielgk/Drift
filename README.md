@@ -39,21 +39,21 @@ Starts at Sway session launch. Holds state in memory. Accepts commands over `/tm
 
 ```
 driftd             # start the daemon
-drift-ctl toggle
-drift-ctl activate
-drift-ctl deactivate
-drift-ctl status
+driftd toggle
+driftd activate
+driftd deactivate
+driftd status
 
 # Configuration
-drift-ctl config get max-windows
-drift-ctl config set max-windows 3
-drift-ctl config get overflow-delay
-drift-ctl config set overflow-delay 250
+driftd config get max-windows
+driftd config set max-windows 3
+driftd config get overflow-delay
+driftd config set overflow-delay 250
 ```
 
 ## Available Actions
 
-Both `drift` and `drift-ctl` provide the following actions:
+Both `drift` and `driftd` provide the following actions:
 
 | Action       | What it does when active                                  |
 |--------------|-----------------------------------------------------------|
@@ -125,14 +125,14 @@ for_window [class=".*"] exec drift overflow
 exec driftd
 
 # Toggle drift on/off
-bindsym $mod+F1 exec drift-ctl toggle
+bindsym $mod+F1 exec driftd toggle
 
 # Bind drift actions
-bindsym $mod+Right       exec drift-ctl next
-bindsym $mod+Left        exec drift-ctl prev
-bindsym $mod+Shift+Right exec drift-ctl move-next
-bindsym $mod+Shift+Left  exec drift-ctl move-prev
-bindsym $mod+Tab         exec drift-ctl back
+bindsym $mod+Right       exec driftd next
+bindsym $mod+Left        exec driftd prev
+bindsym $mod+Shift+Right exec driftd move-next
+bindsym $mod+Shift+Left  exec driftd move-prev
+bindsym $mod+Tab         exec driftd back
 ```
 
 ## Options
