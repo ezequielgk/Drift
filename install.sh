@@ -65,7 +65,7 @@ main() {
     local url="https://github.com/${REPO}/releases/download/${tag}/${pkg}.tar.gz"
     local tmp
     tmp="$(mktemp -d)"
-    trap 'rm -rf "${tmp}"' EXIT
+    trap "rm -rf '${tmp}'" EXIT
 
     info "Downloading drift ${tag}..."
     curl -fsSL "${url}" -o "${tmp}/${pkg}.tar.gz" \
