@@ -19,7 +19,12 @@ fn dispatch_action(action: Action, client: &mut IpcClient) -> Result<(), DriftEr
 
 pub fn run_daemon(sway_socket: &str) -> Result<(), DriftError> {
     if fs::metadata(DAEMON_SOCKET).is_ok() {
-        return Err(DriftError::DaemonAlreadyRunning);
+        if std::os::unix::net::UnixStream::connect(DAEMON_SOCKET).is_ok() {
+            return Err(DriftError::DaemonAlreadyRunning);
+        } else {
+            // Orphaned socket, remove it
+            let _ = fs::remove_file(DAEMON_SOCKET);
+        }
     }
 
     let listener = UnixListener::bind(DAEMON_SOCKET).map_err(DriftError::StateIo)?;
