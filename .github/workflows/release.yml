@@ -33,21 +33,21 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-
 
       - name: Build release binaries
-        run: cargo build --release --target x86_64-unknown-linux-gnu
+        run: cd drift && cargo build --release --target x86_64-unknown-linux-gnu
 
       - name: Generate shell completions
         run: |
           mkdir -p completions
 
           # drift completions
-          ./target/x86_64-unknown-linux-gnu/release/drift completions bash > completions/drift.bash
-          ./target/x86_64-unknown-linux-gnu/release/drift completions zsh  > completions/_drift
-          ./target/x86_64-unknown-linux-gnu/release/drift completions fish > completions/drift.fish
+          ./drift/target/x86_64-unknown-linux-gnu/release/drift completions bash > completions/drift.bash
+          ./drift/target/x86_64-unknown-linux-gnu/release/drift completions zsh  > completions/_drift
+          ./drift/target/x86_64-unknown-linux-gnu/release/drift completions fish > completions/drift.fish
 
           # driftd completions
-          ./target/x86_64-unknown-linux-gnu/release/driftd completions bash > completions/driftd.bash
-          ./target/x86_64-unknown-linux-gnu/release/driftd completions zsh  > completions/_driftd
-          ./target/x86_64-unknown-linux-gnu/release/driftd completions fish > completions/driftd.fish
+          ./drift/target/x86_64-unknown-linux-gnu/release/driftd completions bash > completions/driftd.bash
+          ./drift/target/x86_64-unknown-linux-gnu/release/driftd completions zsh  > completions/_driftd
+          ./drift/target/x86_64-unknown-linux-gnu/release/driftd completions fish > completions/driftd.fish
 
       - name: Package tar.gz
         run: |
@@ -57,8 +57,8 @@ jobs:
 
           mkdir -p "${PKG}/completions"
 
-          cp target/${ARCH}/release/drift   "${PKG}/"
-          cp target/${ARCH}/release/driftd  "${PKG}/"
+          cp drift/target/${ARCH}/release/drift   "${PKG}/"
+          cp drift/target/${ARCH}/release/driftd  "${PKG}/"
           cp completions/*                  "${PKG}/completions/"
           cp README.md                      "${PKG}/"
 
